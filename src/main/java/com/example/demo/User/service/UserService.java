@@ -31,7 +31,12 @@ public class UserService {
     }
 
     public Optional<User> getUserByEmail(String mail) {
-        return userRepository.findByEmail(mail); 
+
+        Optional<User> userFound =   userRepository.findByEmail(mail); 
+
+
+            System.err.println(userFound + "#########################" ) ;
+        return userFound; 
     }
 
     public List<User> getUsers() {
@@ -157,8 +162,8 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public User addNewUser(String name ,String identifiant , String pswd ,String salt) {
-        return userRepository.addNewUser(name, identifiant , pswd , salt);
+    public User addNewUser(String name ,String mail , String pswd ,String salt) {
+        return userRepository.addNewUser(name, mail , pswd , salt);
     }
 
     // VALIDER LE TOKEN

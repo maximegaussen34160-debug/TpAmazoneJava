@@ -36,13 +36,20 @@ public class UserController {
     public void register(@Valid @RequestBody CreateUserRequest request) { 
         String mail = request.getEmail();
 
+        System.out.println(mail+"__________________________________");
+        
         Optional<User> user = userService.getUserByEmail(mail);
 
+        System.out.println(user+"__________________________________");
+
         String pwd = request.getPassword();
+
+        System.out.println(user+"__________________________________");
 
         if (user.isPresent()) {
             user.get().setPass(userService.hash(pwd+userService.getPeper()));
         }
+        
     }
 
     // LOGIN
@@ -110,7 +117,6 @@ public class UserController {
         String mail = request.getMail();
 
         User user = userService.addNewUser(request.getName() , mail, "", userService.generateSalt());
-
         return new ReponseSalt(user.getSalt());
     }
 }

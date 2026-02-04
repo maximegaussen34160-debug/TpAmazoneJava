@@ -1,6 +1,5 @@
 package com.example.demo.User.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 public class User {
 
     private Long id;
@@ -28,7 +27,8 @@ public class User {
     // JPA requires a no-args constructor
     public User() {}
 
-    public User(Long id ,String email, String name, String pass, String salt) {
+    // User user = new User(id, name, mail, pswd, salt);
+    public User(Long id ,String name, String email, String pass, String salt) {
         this.id = id ;
         this.name = name;
         this.email = email;

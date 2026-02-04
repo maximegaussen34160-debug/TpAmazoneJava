@@ -5,8 +5,9 @@ public class SaltRequest {
     private String name;
     private String mail;
 
-    public SaltRequest(String mail)
+    public SaltRequest(String name, String mail)
     {
+        this.name = name; 
         this.mail = mail;
     }
 

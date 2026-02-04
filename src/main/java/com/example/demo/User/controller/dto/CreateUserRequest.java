@@ -6,17 +6,9 @@ package com.example.demo.User.controller.dto;
 
 public class CreateUserRequest {
 
-    
     private String name;
-
-    
     private String email;
-
-    
-    private String password;
-
-    public CreateUserRequest() {
-    }
+    private String password; 
 
     public CreateUserRequest(String name, String email, String password) {
         this.name = name;

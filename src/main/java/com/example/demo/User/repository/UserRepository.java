@@ -17,30 +17,39 @@ public class UserRepository {
     private final List<User> users = new ArrayList<>();
 
     public Optional<User> findByEmail(String email) {
-        return store.values().stream()
-            .filter(user -> user.getEmail() != null && user.getEmail().equalsIgnoreCase(email))
-            .findFirst();
+        Optional<User> userFound = users.stream()
+                .filter(user -> {
+                    boolean emailExists = user.getEmail() != null;
+                    boolean emailMatches = user.getEmail().equals(email);
+                    
+                    return emailExists && emailMatches;
+
+                })
+                .findFirst();
+
+        
+        return userFound;
     }
 
     public boolean existsByEmail(String email) {
         return findByEmail(email).isPresent();
     }
-    public User addNewUser(String name ,String identifiant , String pswd ,String salt){
+
+    public User addNewUser(String name, String email, String pswd, String salt) {
         Long id = System.currentTimeMillis() / 1000;
 
-        User user = new User(id ,name , identifiant, pswd , salt); 
+        User user = new User(id, name, email, pswd, salt);
 
         this.users.add(user);
 
         return user;
     }
 
-
     public User save(User user) {
         if (user.getId() == null) {
             user.setId(idGenerator.getAndIncrement());
         }
-        store.put(user.getId(), user);
+        users.add(user);
         return user;
     }
 
