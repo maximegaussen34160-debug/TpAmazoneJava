@@ -1,0 +1,91 @@
+package com.example.demo.User.controller;
+
+import com.example.demo.User.dto.*;
+import com.example.demo.User.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    // REGISTER
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@Valid @RequestBody CreateUserRequest request) {
+        try {
+            UserDTO user = userService.register(request);
+            return ResponseEntity.ok(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // LOGIN
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            LoginResponse response = userService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // LOGOUT
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            userService.logout(token);
+            return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Token invalide"));
+        }
+    }
+
+    // MOT DE PASSE OUBLIÉ - Demande le code
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            String code = userService.forgotPassword(request);
+            return ResponseEntity.ok(Map.of(
+                "message", "Code envoyé (voir console serveur)",
+                "code", code  // Pour les tests uniquement !
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // RÉINITIALISER LE MOT DE PASSE avec le code
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            userService.resetPassword(request);
+            return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // VALIDER LE TOKEN
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            boolean valid = userService.validateToken(token);
+            return ResponseEntity.ok(Map.of("valid", valid));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("valid", false));
+        }
+    }
+}
