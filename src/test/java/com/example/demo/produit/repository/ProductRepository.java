@@ -22,7 +22,7 @@ public class ProductRepository {
     }
 
     
-    public Product addNewUser(String name , String descript ,Integer price , Integer stock){
+    public Product addNewProduct(String name , String descript ,Integer price , Integer stock){
         Long id = System.currentTimeMillis() / 1000;
 
         Product product = new Product(id ,name, descript , price,stock); 
