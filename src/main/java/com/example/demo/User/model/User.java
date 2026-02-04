@@ -9,14 +9,14 @@ public class User {
 
     private String email;
 
-    @JsonIgnore
+    
     private String pass;
 
     private String salt;
 
     private boolean isConnected = false;
 
-    @JsonIgnore
+    
     private String jwtToken;
 
     private Long tokenExpiry;
@@ -28,7 +28,8 @@ public class User {
     // JPA requires a no-args constructor
     public User() {}
 
-    public User(String email, String name, String pass, String salt) {
+    public User(Long id ,String email, String name, String pass, String salt) {
+        this.id = id ;
         this.name = name;
         this.email = email;
         this.pass = pass;

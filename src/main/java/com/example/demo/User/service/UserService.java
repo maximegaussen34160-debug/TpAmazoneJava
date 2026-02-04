@@ -1,6 +1,6 @@
 package com.example.demo.User.service;
 
-import com.example.demo.User.dto.*;
+import com.example.demo.User.controller.dto.*;
 import com.example.demo.User.model.User;
 import com.example.demo.User.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -28,6 +30,14 @@ public class UserService {
         this.pepper = pepper;
     }
 
+    public Optional<User> getUserByEmail(String mail) {
+        return userRepository.findByEmail(mail); 
+    }
+
+    public List<User> getUsers() {
+        return userRepository.findAlls();
+    }
+
     // Hash simple avec SHA-256
     private String hash(String text) {
         try {
@@ -40,7 +50,7 @@ public class UserService {
     }
 
     // Générer un salt aléatoire
-    private String generateSalt() {
+    public String generateSalt() {
         byte[] saltBytes = new byte[16];
         secureRandom.nextBytes(saltBytes);
         return Base64.getEncoder().encodeToString(saltBytes);
@@ -53,19 +63,19 @@ public class UserService {
     }
 
     // REGISTER
-    public UserDTO register(CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email déjà utilisé");
-        }
+    // public UserDTO register(CreateUserRequest request) {
+    //     if (userRepository.existsByEmail(request.getEmail())) {
+    //         throw new IllegalArgumentException("Email déjà utilisé");
+    //     }
 
-        String salt = generateSalt();
-        String hashedPassword = hash(request.getPassword() + salt + pepper);
+    //     String salt = generateSalt();
+    //     String hashedPassword = hash(request.getPassword() + salt + pepper);
 
-        User user = new User(request.getEmail(), request.getName(), hashedPassword, salt);
-        User saved = userRepository.save(user);
+    //     User user = new User(request.getEmail(), request.getName(), hashedPassword, salt);
+    //     User saved = userRepository.save(user);
 
-        return new UserDTO(saved.getId(), saved.getName(), saved.getEmail());
-    }
+    //     return new UserDTO(saved.getId(), saved.getName(), saved.getEmail());
+    // }
 
     // LOGIN
     public LoginResponse login(LoginRequest request) {
@@ -144,6 +154,10 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public User addNewUser(String name ,String identifiant , String pswd ,String salt) {
+        return userRepository.addNewUser(name, identifiant , pswd , salt);
+    }
+
     // VALIDER LE TOKEN
     public boolean validateToken(String token) {
         try {
@@ -166,5 +180,7 @@ public class UserService {
         } catch (Exception e) {
             return false;
         }
+
+        
     }
 }

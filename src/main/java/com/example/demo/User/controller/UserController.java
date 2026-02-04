@@ -1,12 +1,21 @@
 package com.example.demo.User.controller;
 
-import com.example.demo.User.dto.*;
-import com.example.demo.User.service.UserService;
+import com.example.demo.User.controller.dto.ResetPasswordRequest;
+import com.example.demo.User.controller.dto.ForgotPasswordRequest;
+import com.example.demo.User.controller.dto.LoginResponse;
+import com.example.demo.User.controller.dto.ReponseSalt;
+import com.example.demo.User.controller.dto.SaltRequest;
+import com.example.demo.User.controller.dto.LoginRequest;
+import com.example.demo.User.model.User;
+import com.example.demo.User.controller.dto.CreateUserRequest;
+import com.example.demo.User.service.UserService; 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("")
@@ -17,15 +26,22 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
+     @GetMapping("/users")
+    public List<User> getUsers() {
+        return userService.getUsers();
+    }
 
     // REGISTER
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody CreateUserRequest request) {
-        try {
-            UserDTO user = userService.register(request);
-            return ResponseEntity.ok(user);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    public void register(@Valid @RequestBody CreateUserRequest request) { 
+        String mail = request.getEmail();
+
+        Optional<User> user = userService.getUserByEmail(mail);
+
+        String pwd = request.getPassword();
+
+        if (user.isPresent()) {
+            user.get().setPass(pwd);
         }
     }
 
@@ -87,5 +103,14 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("valid", false));
         }
+    }
+
+    @PostMapping("/user/sel")
+    public ReponseSalt postSendSalt(@Valid @RequestBody SaltRequest request) {
+        String mail = request.getMail();
+
+        User user = userService.addNewUser(request.getName() , mail, "", userService.generateSalt());
+
+        return new ReponseSalt(user.getSalt());
     }
 }

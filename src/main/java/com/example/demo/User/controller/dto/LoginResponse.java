@@ -1,4 +1,4 @@
-package com.example.demo.User.dto;
+package com.example.demo.User.controller.dto;
 
 public class LoginResponse {
     private String token;

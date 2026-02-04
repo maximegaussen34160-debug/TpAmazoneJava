@@ -1,23 +1,24 @@
-package com.example.demo.User.dto;
+package com.example.demo.User.controller.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Size;
+// import jakarta.validation.constraints.Email;
+// import jakarta.validation.constraints.NotBlank;
+// import jakarta.validation.constraints.Size;
 
-public class UpdateUserRequest {
+public class CreateUserRequest {
 
-    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
+    
     private String name;
 
-    @Email(message = "Email should be valid")
+    
     private String email;
 
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    
     private String password;
 
-    public UpdateUserRequest() {
+    public CreateUserRequest() {
     }
 
-    public UpdateUserRequest(String name, String email, String password) {
+    public CreateUserRequest(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;

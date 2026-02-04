@@ -14,6 +14,7 @@ public class UserRepository {
 
     private final ConcurrentHashMap<Long, User> store = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
+    private final List<User> users = new ArrayList<>();
 
     public Optional<User> findByEmail(String email) {
         return store.values().stream()
@@ -24,6 +25,16 @@ public class UserRepository {
     public boolean existsByEmail(String email) {
         return findByEmail(email).isPresent();
     }
+    public User addNewUser(String name ,String identifiant , String pswd ,String salt){
+        Long id = System.currentTimeMillis() / 1000;
+
+        User user = new User(id ,name , identifiant, pswd , salt); 
+
+        this.users.add(user);
+
+        return user;
+    }
+
 
     public User save(User user) {
         if (user.getId() == null) {
@@ -31,6 +42,10 @@ public class UserRepository {
         }
         store.put(user.getId(), user);
         return user;
+    }
+
+    public List<User> findAlls() {
+        return users;
     }
 
     public List<User> findAll() {

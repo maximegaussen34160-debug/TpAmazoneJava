@@ -1,4 +1,4 @@
-package com.example.demo.User.dto;
+package com.example.demo.User.controller.dto;
 
 public class UserDTO {
     private Long id;
