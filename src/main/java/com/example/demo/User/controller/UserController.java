@@ -41,7 +41,7 @@ public class UserController {
         String pwd = request.getPassword();
 
         if (user.isPresent()) {
-            user.get().setPass(pwd);
+            user.get().setPass(userService.hash(pwd+userService.getPeper()));
         }
     }
 

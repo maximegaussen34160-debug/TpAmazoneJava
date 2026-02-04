@@ -38,8 +38,11 @@ public class UserService {
         return userRepository.findAlls();
     }
 
+    public String getPeper(){
+        return this.pepper;
+    }
     // Hash simple avec SHA-256
-    private String hash(String text) {
+    public String hash(String text) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
