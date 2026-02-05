@@ -3,13 +3,9 @@ package com.example.demo.User.service;
 import com.example.demo.User.controller.dto.*;
 import com.example.demo.User.model.User;
 import com.example.demo.User.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,177 +14,125 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final SecureRandom secureRandom;
-    private final String pepper;
+    private final PasswordHasher passwordHasher;
+    private final SecureRandom secureRandom = new SecureRandom();
 
-    public UserService(UserRepository userRepository,
-                      JwtService jwtService,
-                      @Value("${app.security.password.pepper}") String pepper) {
+    public UserService(UserRepository userRepository, JwtService jwtService, PasswordHasher passwordHasher) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
-        this.secureRandom = new SecureRandom();
-        this.pepper = pepper;
+        this.passwordHasher = passwordHasher;
     }
 
-    public Optional<User> getUserByEmail(String mail) {
-
-        Optional<User> userFound =   userRepository.findByEmail(mail); 
-
-
-            System.err.println(userFound + "#########################" ) ;
-        return userFound; 
+    // GET /salt - Génère un nouveau salt (inscription)
+    public String generateNewSalt() {
+        return passwordHasher.generateSalt();
     }
 
-    public List<User> getUsers() {
-        return userRepository.findAlls();
-    }
-
-    public String getPeper(){
-        return this.pepper;
-    }
-    // Hash simple avec SHA-256
-    public String hash(String text) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hashBytes);
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur de hashage", e);
+    // GET /salt?email=... - Récupère le salt (login) - ANTI-ORACLE
+    public String getSaltByEmail(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            return user.get().getSalt();
+        } else {
+            return passwordHasher.hash(email + "fake_salt_secret").substring(0, 24);
         }
     }
 
-    // Générer un salt aléatoire
-    public String generateSalt() {
-        byte[] saltBytes = new byte[16];
-        secureRandom.nextBytes(saltBytes);
-        return Base64.getEncoder().encodeToString(saltBytes);
+    // POST /user - Inscription
+    public UserDTO register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email déjà utilisé");
+        }
+
+        String finalHash = passwordHasher.addPepperToHash(request.getPass());
+        User user = new User(null, request.getName(), request.getEmail(), finalHash, request.getSalt());
+        User saved = userRepository.save(user);
+
+        return new UserDTO(saved.getId(), saved.getName(), saved.getEmail());
     }
 
-    // Générer un code à 6 chiffres
-    private String generateCode() {
-        int code = 100000 + secureRandom.nextInt(900000);
-        return String.valueOf(code);
-    }
-
-    // REGISTER
-    // public UserDTO register(CreateUserRequest request) {
-    //     if (userRepository.existsByEmail(request.getEmail())) {
-    //         throw new IllegalArgumentException("Email déjà utilisé");
-    //     }
-
-    //     String salt = generateSalt();
-    //     String hashedPassword = hash(request.getPassword() + salt + pepper);
-
-    //     User user = new User(request.getEmail(), request.getName(), hashedPassword, salt);
-    //     User saved = userRepository.save(user);
-
-    //     return new UserDTO(saved.getId(), saved.getName(), saved.getEmail());
-    // }
-
-    // LOGIN
+    // POST /login - Connexion avec délai anti-brute-force
     public LoginResponse login(LoginRequest request) {
+        try {
+            Thread.sleep(1000); // Délai anti-brute-force
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new IllegalArgumentException("Email ou mot de passe incorrect"));
 
-        String hashedInput = hash(request.getPassword() + user.getSalt() + pepper);
-        if (!hashedInput.equals(user.getPass())) {
+        String finalHash = passwordHasher.addPepperToHash(request.getPassword());
+
+        if (!user.getPass().equals(finalHash)) {
             throw new IllegalArgumentException("Email ou mot de passe incorrect");
         }
 
-        String token = jwtService.generateToken(user.getEmail(), user.getId());
-        long expiryTime = System.currentTimeMillis() + jwtService.getExpirationMs();
+        String token = jwtService.generateToken(user.getEmail(),  user.getId());
+        long expiresIn = 3600000;
 
-        user.setConnected(true);
         user.setJwtToken(token);
-        user.setTokenExpiry(expiryTime);
+        user.setTokenExpiry(System.currentTimeMillis() + expiresIn);
+        user.setConnected(true);
         userRepository.save(user);
 
-        return new LoginResponse(token, user.getId(), user.getEmail(), user.getName(), jwtService.getExpirationMs());
+        return new LoginResponse(token, user.getId(), user.getEmail(), user.getName(), user.getRole(), expiresIn);
     }
 
-    // LOGOUT
-    public void logout(String token) {
-        String email = jwtService.extractEmail(token);
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
-
-        user.setConnected(false);
-        user.setJwtToken(null);
-        user.setTokenExpiry(null);
-        userRepository.save(user);
-    }
-
-    // MOT DE PASSE OUBLIÉ - Génère un code
+    // POST /forgot-password
     public String forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new IllegalArgumentException("Email non trouvé"));
+        String message = "Si votre email existe, un code a été envoyé";
+        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
-        String code = generateCode();
-        long expiryTime = System.currentTimeMillis() + (10 * 60 * 1000); // 10 minutes
-
-        user.setResetCode(code);
-        user.setResetCodeExpiry(expiryTime);
-        userRepository.save(user);
-
-        // Afficher le code dans la console (au lieu d'envoyer par email)
-        System.out.println("═══════════════════════════════════════");
-        System.out.println("CODE DE RÉINITIALISATION");
-        System.out.println("Email: " + request.getEmail());
-        System.out.println("Code: " + code);
-        System.out.println("Valide pendant 10 minutes");
-        System.out.println("═══════════════════════════════════════");
-
-        return code; // Retourné pour les tests
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String code = generateCode();
+            user.setResetCode(code);
+            user.setResetCodeExpiry(System.currentTimeMillis() + 300000);
+            userRepository.save(user);
+            System.out.println("Code pour " + request.getEmail() + " : " + code);
+        }
+        return message;
     }
 
-    // RÉINITIALISER LE MOT DE PASSE avec le code
-    public void resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findAll().stream()
-            .filter(u -> request.getCode().equals(u.getResetCode()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Code invalide"));
+    // POST /verify-reset-code
+    public boolean verifyResetCode(String email, String code) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) return false;
 
-        if (user.getResetCodeExpiry() == null || System.currentTimeMillis() > user.getResetCodeExpiry()) {
-            throw new IllegalArgumentException("Code expiré");
+        User user = userOpt.get();
+        if (user.getResetCode() == null || user.getResetCodeExpiry() == null) return false;
+        if (System.currentTimeMillis() > user.getResetCodeExpiry()) return false;
+
+        return user.getResetCode().equals(code);
+    }
+
+    // POST /reset-password
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!verifyResetCode(request.getEmail(), request.getCode())) {
+            throw new IllegalArgumentException("Code invalide ou expiré");
         }
 
-        String salt = generateSalt();
-        String hashedPassword = hash(request.getNewPassword() + salt + pepper);
+        User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
 
-        user.setPass(hashedPassword);
-        user.setSalt(salt);
+        String finalHash = passwordHasher.addPepperToHash(request.getNewPassword());
+        user.setPass(finalHash);
+        user.setSalt(request.getSalt());
         user.setResetCode(null);
         user.setResetCodeExpiry(null);
         userRepository.save(user);
     }
 
-    public User addNewUser(String name ,String mail , String pswd ,String salt) {
-        return userRepository.addNewUser(name, mail , pswd , salt);
+    private String generateCode() {
+        return String.valueOf(100000 + secureRandom.nextInt(900000));
     }
 
-    // VALIDER LE TOKEN
-    public boolean validateToken(String token) {
-        try {
-            String email = jwtService.extractEmail(token);
-            User user = userRepository.findByEmail(email).orElse(null);
+    public List<User> getUsers() {
+        return userRepository.findAll();
+    }
 
-            if (user == null || !token.equals(user.getJwtToken())) {
-                return false;
-            }
-
-            if (user.getTokenExpiry() == null || System.currentTimeMillis() > user.getTokenExpiry()) {
-                user.setConnected(false);
-                user.setJwtToken(null);
-                user.setTokenExpiry(null);
-                userRepository.save(user);
-                return false;
-            }
-
-            return user.isConnected();
-        } catch (Exception e) {
-            return false;
-        }
-
-        
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 }

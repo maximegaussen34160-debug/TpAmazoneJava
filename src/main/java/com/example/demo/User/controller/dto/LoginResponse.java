@@ -6,16 +6,18 @@ public class LoginResponse {
     private Long userId;
     private String email;
     private String name;
+    private String role;
     private long expiresIn;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, Long userId, String email, String name, long expiresIn) {
+    public LoginResponse(String token, Long userId, String email, String name, String role, long expiresIn) {
         this.token = token;
         this.userId = userId;
         this.email = email;
         this.name = name;
+        this.role = role;
         this.expiresIn = expiresIn;
     }
 
@@ -57,6 +59,14 @@ public class LoginResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public long getExpiresIn() {

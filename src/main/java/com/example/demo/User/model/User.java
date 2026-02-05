@@ -1,7 +1,13 @@
 package com.example.demo.User.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "users")
 public class User {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
@@ -12,6 +18,9 @@ public class User {
     private String pass;
 
     private String salt;
+
+    @Column(columnDefinition = "VARCHAR(10) DEFAULT 'USER'")
+    private String role = "USER"; // "USER" ou "ADMIN"
 
     private boolean isConnected = false;
 
@@ -74,6 +83,14 @@ public class User {
 
     public void setSalt(String salt) {
         this.salt = salt;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public boolean isConnected() {

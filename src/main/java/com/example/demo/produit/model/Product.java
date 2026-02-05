@@ -1,39 +1,48 @@
 package com.example.demo.produit.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "products")
 public class Product {
 
-    Long id;
-    String name;
-    String descrpit;
-    Integer price;
-    Integer stock;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-public Product(Long id, String name, String descrpit ,Integer price,Integer stock) {
+    private String name;
+    private Double price;
+    private String description;
+    private Integer stock;
+    private String imageUrl;
+
+    public Product() {}
+
+    public Product(Long id, String name, Double price, String description, Integer stock, String imageUrl) {
         this.id = id;
         this.name = name;
-        this.descrpit = descrpit;
         this.price = price;
+        this.description = description;
         this.stock = stock;
+        this.imageUrl = imageUrl;
     }
 
-    public Long getId() {
-        return id;
-    }
+    // Getters et Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getDescrpit() {
-        return descrpit;
-    }
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
 
-    public Integer getPrice() {
-        return price;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public Integer getStock() {
-        return stock;
-    }
-    
+    public Integer getStock() { return stock; }
+    public void setStock(Integer stock) { this.stock = stock; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }
